@@ -23,12 +23,25 @@ import {
   siblingList,
 } from '@/core/doc'
 import { clamp, rect, unionRects } from '@/core/geometry'
+import {
+  GRID_PRESETS,
+  makeGrid,
+  makeRegion,
+  makeSet,
+  migrateGrids,
+  regionAt,
+  type RegionPath,
+} from '@/core/grid'
 import type {
   Doc,
+  FrameGrid,
+  GridRegion,
+  GuideSet,
   LayoutMode,
   Node,
   NodeSpec,
   Rect,
+  SplitDir,
   Style,
   Theme,
 } from '@/core/types'
@@ -129,6 +142,8 @@ export interface State {
   savedAt: number | null
   /** which panel the left rail is showing */
   panel: 'components' | 'layers' | 'frames'
+  /** the grid region the inspector is editing, highlighted on canvas */
+  gridFocus: { frameId: string; path: RegionPath } | null
 
   // --- doc mutation -------------------------------------------------------
   mutate: (recipe: (d: Draft<Doc>) => void, history?: boolean) => void
@@ -192,6 +207,18 @@ export interface State {
   reparentNodes: (ids: string[], parent: string | null, index?: number) => void
   setLink: (id: string, target: string | undefined) => void
 
+  // --- layout grid --------------------------------------------------------
+  setGridFocus: (f: { frameId: string; path: RegionPath } | null) => void
+  toggleGrid: (ids?: string[]) => void
+  setGrid: (id: string, patch: Partial<FrameGrid>) => void
+  applyGridPreset: (id: string, presetId: string) => void
+  splitGridRegion: (id: string, path: RegionPath, dir: SplitDir, count: number) => void
+  mergeGridRegion: (id: string, path: RegionPath) => void
+  setGridRegion: (id: string, path: RegionPath, patch: Partial<GridRegion>) => void
+  addGuideSet: (id: string, path: RegionPath, patch?: Partial<GuideSet>) => void
+  setGuideSet: (id: string, path: RegionPath, setId: string, patch: Partial<GuideSet>) => void
+  removeGuideSet: (id: string, path: RegionPath, setId: string) => void
+
   // --- document -----------------------------------------------------------
   newDoc: () => void
   loadDoc: (d: Doc) => void
@@ -239,7 +266,7 @@ export function loadPersisted(): Doc | null {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw)
-    if (parsed?.doc?.nodes) return parsed.doc as Doc
+    if (parsed?.doc?.nodes) return migrateGrids(parsed.doc as Doc)
   } catch {
     /* ignore */
   }
@@ -254,6 +281,40 @@ function schedulePersist(doc: Doc) {
     persist(doc)
     useStore.setState({ saving: false, savedAt: Date.now() })
   }, 500)
+}
+
+/**
+ * The grid a frame should get the first time someone asks for one: the column
+ * count its device implies, with the margins that device ships with.
+ */
+function defaultGridFor(node: { props?: Record<string, any>; frame: Rect }): FrameGrid {
+  const dev = getDevice(node.props?.device ?? '')
+  const w = node.frame.w
+  const columns = dev?.guides?.columns ?? (w < 600 ? 4 : w < 1000 ? 8 : 12)
+  const gutter = dev?.guides?.gutter ?? (w < 600 ? 16 : 24)
+  const margin = dev?.guides?.margin ?? (w < 600 ? 20 : 64)
+  return makeGrid({
+    root: makeRegion({
+      pad: [margin, margin, margin, margin],
+      sets: [makeSet({ kind: 'columns', count: columns, gutter })],
+    }),
+  })
+}
+
+/** Run `fn` against one region of a frame's grid, inside a history entry. */
+function withRegion(
+  s: State,
+  id: string,
+  path: RegionPath,
+  fn: (region: GridRegion) => void,
+) {
+  s.mutate((d) => {
+    const t = d.nodes[id]
+    if (!t) return
+    if (!t.grid) t.grid = defaultGridFor(t)
+    const region = regionAt(t.grid.root as GridRegion, path)
+    if (region) fn(region)
+  })
 }
 
 export const useStore = create<State>()((set, get) => ({
@@ -271,6 +332,7 @@ export const useStore = create<State>()((set, get) => ({
   cursor: { x: 0, y: 0 },
 
   prefs: loadPrefs(),
+  gridFocus: null,
   palette: false,
   contextMenu: null,
   dropHint: null,
@@ -467,16 +529,10 @@ export const useStore = create<State>()((set, get) => ({
         frame: rect(Math.round(pos.x), Math.round(pos.y), w, h),
         props: { device: deviceId, chrome: dev?.chrome ?? 'none', face: dev?.face },
         style: { fill: 'var(--paper)', clip: true },
-        guides: dev?.guides
-          ? {
-              enabled: false,
-              columns: dev.guides.columns ?? 12,
-              gutter: dev.guides.gutter ?? 24,
-              margin: dev.guides.margin ?? 32,
-              color: 'rgba(232,97,60,0.16)',
-            }
-          : null,
       })
+      // Every frame arrives with the grid its device implies, switched off
+      // until you ask for it — so Shift+G is instant rather than a setup task.
+      n.grid = { ...defaultGridFor(n), visible: false }
       d.nodes[id] = n
       d.roots.push(id)
     })
@@ -948,6 +1004,100 @@ export const useStore = create<State>()((set, get) => ({
 
   setLink: (id, target) => get().mutate((d) => { if (d.nodes[id]) d.nodes[id].link = target }),
 
+  // --- layout grid ---------------------------------------------------------
+  setGridFocus: (f) => set({ gridFocus: f }),
+
+  /**
+   * Turn the grid on or off for the selected frames. A frame that has never had
+   * one gets the grid its device suggests — a phone wants 4 columns, a desktop
+   * 12 — so the first press shows something useful rather than an empty toggle.
+   */
+  toggleGrid: (ids) => {
+    const s = get()
+    const frames = (ids ?? s.selection)
+      .map((id) => frameOf(s.doc.nodes, id))
+      .filter((f): f is Node => !!f)
+    const unique = [...new Map(frames.map((f) => [f.id, f])).values()]
+    if (!unique.length) {
+      s.toast('Select a frame to add a layout grid', 'warn')
+      return
+    }
+    const turningOn = unique.some((f) => !f.grid?.visible)
+    s.mutate((d) => {
+      for (const f of unique) {
+        const t = d.nodes[f.id]
+        if (!t.grid) t.grid = defaultGridFor(t)
+        t.grid.visible = turningOn
+      }
+    })
+    if (turningOn && !s.prefs.showGuides) s.setPrefs({ showGuides: true })
+  },
+
+  setGrid: (id, patch) =>
+    get().mutate((d) => {
+      const t = d.nodes[id]
+      if (!t) return
+      t.grid = { ...(t.grid ?? defaultGridFor(t)), ...patch }
+    }),
+
+  applyGridPreset: (id, presetId) => {
+    const preset = GRID_PRESETS.find((p) => p.id === presetId)
+    if (!preset) return
+    get().mutate((d) => {
+      const t = d.nodes[id]
+      if (!t) return
+      t.grid = makeGrid({ visible: true, snap: t.grid?.snap ?? true, root: preset.build() })
+    })
+    set({ gridFocus: { frameId: id, path: [] } })
+  },
+
+  splitGridRegion: (id, path, dir, count) => {
+    withRegion(get(), id, path, (region) => {
+      const n = Math.max(1, Math.min(12, Math.round(count)))
+      if (n === 1) {
+        region.dir = null
+        region.children = []
+        return
+      }
+      // Re-splitting the same way keeps the children you already nested, so
+      // going 2 → 3 columns does not throw away the rows inside them.
+      const keep = region.dir === dir ? region.children : []
+      region.dir = dir
+      region.children = Array.from({ length: n }, (_, i) => keep[i] ?? makeRegion())
+    })
+    set({ gridFocus: { frameId: id, path } })
+  },
+
+  mergeGridRegion: (id, path) => {
+    withRegion(get(), id, path, (region) => {
+      region.dir = null
+      region.children = []
+    })
+  },
+
+  setGridRegion: (id, path, patch) => {
+    withRegion(get(), id, path, (region) => Object.assign(region, patch))
+  },
+
+  addGuideSet: (id, path, patch) => {
+    withRegion(get(), id, path, (region) => {
+      region.sets.push(makeSet(patch))
+    })
+  },
+
+  setGuideSet: (id, path, setId, patch) => {
+    withRegion(get(), id, path, (region) => {
+      const set_ = region.sets.find((x) => x.id === setId)
+      if (set_) Object.assign(set_, patch)
+    })
+  },
+
+  removeGuideSet: (id, path, setId) => {
+    withRegion(get(), id, path, (region) => {
+      region.sets = region.sets.filter((x) => x.id !== setId)
+    })
+  },
+
   // -------------------------------------------------------------------------
   newDoc: () => {
     const d = emptyDoc()
@@ -956,6 +1106,7 @@ export const useStore = create<State>()((set, get) => ({
   },
 
   loadDoc: (d) => {
+    migrateGrids(d)
     persist(d)
     set({ doc: d, past: [], future: [], selection: [], editing: null })
     setTimeout(() => get().zoomToFit(d.roots), 0)

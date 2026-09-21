@@ -7,6 +7,8 @@ export interface SnapLine {
   /** extent of the line so it visually connects the two objects */
   from: number
   to: number
+  /** true when this came from a layout grid rather than a neighbouring object */
+  grid?: boolean
 }
 
 export interface SnapResult {
@@ -35,17 +37,28 @@ const yCands = (r: Rect): Cand[] => [
   { v: r.y + r.h, kind: 'end' },
 ]
 
+/** Standing lines to snap to — a frame's layout grid, in world space. */
+export interface GridLines {
+  xs: number[]
+  ys: number[]
+}
+
 /**
- * Align `moving` to nearby `targets`, then fall back to the pixel grid.
- * Returns the delta to apply plus the guide lines to draw.
+ * Align `moving` to nearby `targets` and to any standing `lines`, then fall
+ * back to the pixel grid. Returns the delta to apply plus the guides to draw.
+ *
+ * Objects win ties against grid lines: when a column edge and a neighbour's
+ * edge are both in range, lining up with the thing you can see beats lining up
+ * with the scaffolding behind it.
  */
 export function snapRect(
   moving: Rect,
   targets: Rect[],
   threshold: number,
   grid = 0,
+  lines?: GridLines,
 ): SnapResult {
-  const lines: SnapLine[] = []
+  const out: SnapLine[] = []
   let bestX: { d: number; delta: number; line: SnapLine } | null = null
   let bestY: { d: number; delta: number; line: SnapLine } | null = null
 
@@ -86,21 +99,53 @@ export function snapRect(
     }
   }
 
+  // Grid lines are considered only where no object claimed the axis.
+  if (lines) {
+    if (!bestX) {
+      for (const m of xCands(moving)) {
+        for (const c of lines.xs) {
+          const d = Math.abs(m.v - c)
+          if (d <= threshold && (!bestX || d < bestX.d)) {
+            bestX = {
+              d,
+              delta: c - m.v,
+              line: { axis: 'x', pos: c, from: moving.y - 16, to: moving.y + moving.h + 16, grid: true },
+            }
+          }
+        }
+      }
+    }
+    if (!bestY) {
+      for (const m of yCands(moving)) {
+        for (const c of lines.ys) {
+          const d = Math.abs(m.v - c)
+          if (d <= threshold && (!bestY || d < bestY.d)) {
+            bestY = {
+              d,
+              delta: c - m.v,
+              line: { axis: 'y', pos: c, from: moving.x - 16, to: moving.x + moving.w + 16, grid: true },
+            }
+          }
+        }
+      }
+    }
+  }
+
   let dx = 0
   let dy = 0
   if (bestX) {
     dx = bestX.delta
-    lines.push(bestX.line)
+    out.push(bestX.line)
   } else if (grid > 0) {
     dx = Math.round(moving.x / grid) * grid - moving.x
   }
   if (bestY) {
     dy = bestY.delta
-    lines.push(bestY.line)
+    out.push(bestY.line)
   } else if (grid > 0) {
     dy = Math.round(moving.y / grid) * grid - moving.y
   }
-  return { dx, dy, lines }
+  return { dx, dy, lines: out }
 }
 
 /** Snap one edge value (used while resizing). */

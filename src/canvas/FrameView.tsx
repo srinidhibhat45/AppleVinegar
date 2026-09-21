@@ -4,32 +4,11 @@ import { NodeView } from '@/render/NodeView'
 import { nodeCss } from '@/render/css'
 import { DeviceChrome } from './DeviceChrome'
 import { screenRadius } from '@/core/devices'
-
-function LayoutGuides({ id }: { id: string }) {
-  const g = useStore((s) => s.doc.nodes[id]?.guides)
-  const on = useStore((s) => s.prefs.showGuides)
-  if (!g?.enabled || !on) return null
-  const cols = Math.max(1, g.columns)
-  return (
-    <div
-      className="guides-overlay"
-      style={{
-        paddingLeft: g.margin,
-        paddingRight: g.margin,
-        gap: g.gutter,
-        ['--guide-color' as any]: g.color,
-      }}
-    >
-      {Array.from({ length: cols }, (_, i) => (
-        <div key={i} className="guides-col" style={{ flex: 1 }} />
-      ))}
-    </div>
-  )
-}
+import { GridOverlay } from './GridOverlay'
 
 /**
  * A top-level artboard: device silhouette, the clipped paper surface, the
- * column guides and the name tag that stays a constant size as you zoom.
+ * layout grid and the name tag that stays a constant size as you zoom.
  */
 function FrameViewInner({ id }: { id: string }) {
   const n = useStore((s) => s.doc.nodes[id])
@@ -81,7 +60,7 @@ function FrameViewInner({ id }: { id: string }) {
         {n.children.map((c) => (
           <NodeView key={c} id={c} parentId={n.id} />
         ))}
-        <LayoutGuides id={id} />
+        <GridOverlay id={id} />
         <DeviceChrome kind={chrome} face={face} w={n.frame.w} h={n.frame.h} layer="front" />
       </div>
     </div>

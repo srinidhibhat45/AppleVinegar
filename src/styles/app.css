@@ -1591,3 +1591,144 @@ h4 {
     display: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Layout grid editor
+--------------------------------------------------------------------------- */
+.grid-map {
+  position: relative;
+  margin: 8px 0;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--r-sm);
+  background: var(--ui-panel-2);
+  overflow: hidden;
+}
+.gm-band {
+  position: absolute;
+  background: var(--accent);
+  opacity: 0.22;
+  pointer-events: none;
+}
+/* Only leaves are clickable — a parent region is edited by walking up to it,
+   so its box never swallows the click meant for the cell inside it. */
+.gm-region {
+  position: absolute;
+  border: 1px dashed color-mix(in srgb, var(--accent) 40%, transparent);
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+.gm-region:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.gm-region.on {
+  border: 1.5px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.gm-split {
+  position: absolute;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  pointer-events: none;
+}
+
+.guide-set {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--r-sm);
+  padding: 7px;
+  margin-top: 6px;
+  background: var(--ui-panel-2);
+}
+.guide-set .row + .row {
+  margin-top: 5px;
+}
+.gs-eye,
+.gs-del {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ui-muted);
+  cursor: pointer;
+}
+.gs-eye:hover:not(:disabled),
+.gs-del:hover:not(:disabled) {
+  background: var(--ui-hover);
+  color: var(--ui-text);
+}
+.gs-eye:disabled,
+.gs-del:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.mini-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  padding: 3px 7px;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  color: var(--ui-text-2);
+  background: var(--ui-panel-2);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+.mini-btn:hover {
+  background: var(--ui-hover);
+  color: var(--ui-text);
+}
+.mini-btn.wide {
+  width: 100%;
+  margin: 6px 0 0;
+  justify-content: center;
+}
+.mini-btn.warn {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.region-kids {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rk-row {
+  display: grid;
+  grid-template-columns: 1fr 78px;
+  gap: 6px;
+  align-items: center;
+}
+.rk-name {
+  text-align: left;
+  padding: 4px 7px;
+  font-size: var(--t-sm);
+  font-weight: 500;
+  color: var(--ui-text-2);
+  background: var(--ui-panel-2);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+.rk-name:hover {
+  background: var(--ui-hover);
+  color: var(--ui-text);
+}
+.rk-sub {
+  color: var(--ui-muted);
+  font-weight: 400;
+}
+
+.kbd-hint {
+  margin-left: auto;
+  font-size: var(--t-xs);
+  color: var(--ui-muted);
+  font-variant-numeric: tabular-nums;
+}

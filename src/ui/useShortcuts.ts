@@ -159,6 +159,13 @@ export function useShortcuts() {
         e.shiftKey ? st.ungroup() : st.group()
         return
       }
+      // Shift+G puts a layout grid on the selected frame — the shortcut most
+      // people arrive from Figma already pressing.
+      if (e.shiftKey && !cmd && e.key.toLowerCase() === 'g') {
+        e.preventDefault()
+        st.toggleGrid()
+        return
+      }
       if (e.shiftKey && !cmd && e.key.toLowerCase() === 'a') {
         e.preventDefault()
         st.wrapInStack(e.altKey ? 'row' : 'column')

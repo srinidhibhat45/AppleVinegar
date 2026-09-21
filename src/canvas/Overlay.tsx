@@ -1,11 +1,12 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useStore } from '@/store/store'
-import { absPos } from '@/core/doc'
+import { absPos, frameOf } from '@/core/doc'
 import { rect } from '@/core/geometry'
 import type { Node, Rect } from '@/core/types'
 import { nodeWorldRect } from './measure'
 import type { SnapLine } from './snapping'
-import { snapThreshold, snapValue } from './snapping'
+import { snapThreshold, snapValue, type GridLines } from './snapping'
+import { frameGridLines } from './GridOverlay'
 import { keys } from './keys'
 
 type HandleId = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w'
@@ -48,6 +49,8 @@ export function Overlay({ marquee, draw, snapLines, dropParent, dropIndex }: Pro
     sx: number
     sy: number
     siblings: Rect[]
+    /** the host frame's layout grid, solved once when the handle is grabbed */
+    lines: GridLines
   }>(null)
 
   // measure after every commit so overlays never lag a frame behind
@@ -128,7 +131,16 @@ export function Overlay({ marquee, draw, snapLines, dropParent, dropIndex }: Pro
       const pr = nodeWorldRect(parentId)
       if (pr) siblings.push(pr)
     }
-    resizing.current = { handle, start: { ...bounds }, nodes, sx: 0, sy: 0, siblings }
+    const host = frameOf(st.doc.nodes, selection[0])
+    resizing.current = {
+      handle,
+      start: { ...bounds },
+      nodes,
+      sx: 0,
+      sy: 0,
+      siblings,
+      lines: host ? frameGridLines(host.id) : { xs: [], ys: [] },
+    }
     st.begin()
     const canvas = document.getElementById('cider-canvas')!
     const cr = canvas.getBoundingClientRect()
@@ -153,8 +165,10 @@ export function Overlay({ marquee, draw, snapLines, dropParent, dropIndex }: Pro
       let nh = h
       const gridSize = useStore.getState().prefs.snap ? useStore.getState().prefs.gridSize : 0
       const thr = snapThreshold(z)
-      const xs = g.siblings.flatMap((r) => [r.x, r.x + r.w])
-      const ys = g.siblings.flatMap((r) => [r.y, r.y + r.h])
+      // Sibling edges first, then the layout grid: an edge you can see beats
+      // the scaffolding behind it when both are in range.
+      const xs = [...g.siblings.flatMap((r) => [r.x, r.x + r.w]), ...g.lines.xs]
+      const ys = [...g.siblings.flatMap((r) => [r.y, r.y + r.h]), ...g.lines.ys]
 
       if (hs.includes('w')) {
         const v = snapValue(x + dx, xs, thr, gridSize)
@@ -310,13 +324,13 @@ export function Overlay({ marquee, draw, snapLines, dropParent, dropIndex }: Pro
         l.axis === 'x' ? (
           <div
             key={i}
-            className="snap-line v"
+            className={`snap-line v ${l.grid ? 'from-grid' : ''}`}
             style={{ left: W(l.pos), top: H(l.from), height: S(l.to - l.from) }}
           />
         ) : (
           <div
             key={i}
-            className="snap-line h"
+            className={`snap-line h ${l.grid ? 'from-grid' : ''}`}
             style={{ top: H(l.pos), left: W(l.from), width: S(l.to - l.from) }}
           />
         ),

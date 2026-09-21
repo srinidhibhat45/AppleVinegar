@@ -104,16 +104,33 @@
 }
 
 /* layout grid overlay ---------------------------------------------------- */
-.guides-overlay {
+.grid-overlay {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  display: flex;
   z-index: 3;
 }
-.guides-col {
-  height: 100%;
-  background: var(--guide-color);
+.grid-overlay > div {
+  position: absolute;
+  inset: 0;
+}
+.grid-band,
+.grid-square {
+  position: absolute;
+  pointer-events: none;
+}
+/* Split boundaries read as structure, not as content: a dashed hairline in the
+   accent, never heavy enough to compete with what you are drawing. */
+.grid-region {
+  position: absolute;
+  pointer-events: none;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.grid-region.focus {
+  border-style: solid;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 /* selection -------------------------------------------------------------- */
@@ -214,6 +231,12 @@
 }
 .snap-line.v {
   width: 1px;
+}
+/* Snapping to the grid is a softer event than snapping to a neighbour, and
+   says so: the accent instead of the hot pink reserved for object alignment. */
+.snap-line.from-grid {
+  background: var(--accent);
+  opacity: 0.85;
 }
 .snap-dist {
   position: absolute;

@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useStore, type Tool } from '@/store/store'
-import { absPos, isAutoLayout, isContainer } from '@/core/doc'
+import { absPos, frameOf, isAutoLayout, isContainer } from '@/core/doc'
 import { normalizeRect, rect } from '@/core/geometry'
 import type { Node, NodeSpec, Rect } from '@/core/types'
 import { NodeView } from '@/render/NodeView'
 import { FrameView } from './FrameView'
 import { Overlay } from './Overlay'
 import { clientToWorld, measuredBounds, nodeWorldRect } from './measure'
-import { snapRect, snapThreshold, type SnapLine } from './snapping'
+import { snapRect, snapThreshold, type GridLines, type SnapLine } from './snapping'
+import { frameGridLines } from './GridOverlay'
 import { containerAt, insertionIndexAt, insertLibraryItem } from './insert'
 import { keys } from './keys'
 import { useDragStore } from '@/store/drag'
@@ -27,6 +28,8 @@ type Gesture =
       detached: boolean
       moved: boolean
       duped: boolean
+      /** the host frame's layout grid, solved once at pick-up */
+      lines: GridLines
     }
   | { kind: 'draw'; tool: Tool; x0: number; y0: number }
 
@@ -190,6 +193,9 @@ export function Canvas() {
       }
     }
     const w = clientToWorld(e.clientX, e.clientY)
+    // Solving the grid on every pointermove would redo the same arithmetic 60
+    // times a second; the frame cannot change mid-drag, so do it once here.
+    const host = frameOf(st.doc.nodes, ids[0])
     g.current = {
       kind: 'move',
       ids,
@@ -200,6 +206,7 @@ export function Canvas() {
       detached: false,
       moved: false,
       duped: false,
+      lines: host ? frameGridLines(host.id) : { xs: [], ys: [] },
     }
   }
 
@@ -314,7 +321,7 @@ export function Canvas() {
         const pr = nodeWorldRect(parentId)
         if (pr) targets.push(pr)
       }
-      const res = snapRect(moving, targets, snapThreshold(viewport.zoom), prefs.gridSize)
+      const res = snapRect(moving, targets, snapThreshold(viewport.zoom), prefs.gridSize, cur.lines)
       sdx = res.dx
       sdy = res.dy
       lines = res.lines

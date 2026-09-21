@@ -289,7 +289,8 @@ export function Topbar() {
         <Menu {...at('view', 'right')} align="right" onClose={() => setMenu(null)} width={242}>
           <MenuLabel>Canvas</MenuLabel>
           <MenuItem icon="grid" label="Dot grid" kbd={`${mod}'`} checked={prefs.showGrid} onClick={() => setPrefs({ showGrid: !prefs.showGrid })} />
-          <MenuItem icon="columns" label="Column guides" kbd={`${mod};`} checked={prefs.showGuides} onClick={() => setPrefs({ showGuides: !prefs.showGuides })} />
+          <MenuItem icon="columns" label="Layout grids" kbd={`${mod};`} checked={prefs.showGuides} onClick={() => setPrefs({ showGuides: !prefs.showGuides })} />
+          <MenuItem icon="grid" label="Grid on this frame" kbd="⇧G" onClick={() => useStore.getState().toggleGrid()} />
           <MenuItem icon="magic" label="Snap to objects" checked={prefs.snap} onClick={() => setPrefs({ snap: !prefs.snap })} />
           <MenuSep />
           <MenuLabel>Interface</MenuLabel>

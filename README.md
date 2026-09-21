@@ -116,9 +116,18 @@ readable. Set `sourcemap: false` in `vite.config.ts` if you would rather not shi
   lids and monitor stands, watch straps, browser chrome. 26 presets from Apple Watch to
   ultrawide, plus A4 and social sizes. The artboard is clipped to each device's screen
   radius, so a square paper corner never pokes out through a rounded phone outline.
-- **Column guides** per frame (columns / gutter / margin) so a layout can be honest about
-  its grid.
-- Smart snapping to sibling edges and centres, with alignment guides, plus an 8px grid.
+- **Layout grids** per frame, toggled with <kbd>⇧</kbd><kbd>G</kbd>. Each frame holds a
+  *tree of regions*: split the frame into columns or rows, split any of those again, and
+  keep going — two columns where the left is two rows and the right is two columns is
+  three clicks, not a pile of throwaway boxes. Regions carry flexible ratios (1 : 3 for a
+  sidebar) and their own padding.
+- On top of the regions sit the familiar **guide sets** — 12 columns with a gutter and
+  margin, rows, or a square baseline grid. A set spans whatever region declares it, so a
+  frame-wide 12-column grid and a 4-column grid inside one panel can show at once. Ten
+  presets cover the usual starting points, from a phone's 4 columns to an app shell.
+- Smart snapping to sibling edges and centres, with alignment guides, plus an 8px grid —
+  and to every column edge and region boundary of the layout grid, so components land on
+  the grid instead of near it.
 - Multi-select, marquee, alt-drag to duplicate, arrow-key nudge, align and distribute.
 
 ### Layout that behaves

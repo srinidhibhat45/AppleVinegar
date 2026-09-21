@@ -70,6 +70,31 @@ reorderable.
 Each child also carries `size: { w, h }` where each axis is `'fixed' | 'fill' | 'hug'`,
 mapped in `src/render/css.ts` to `width`, `flex: 1 1 0`, or `fit-content`/`auto`.
 
+### Layout grids
+
+A frame's `grid` (`src/core/grid.ts`) is scaffolding, not structure: it draws and it
+snaps, but it never owns a node. That separation is the point — you can restructure the
+grid under finished work without touching the work, and delete it without losing anything.
+
+The grid is a tree of **regions**. The root covers the frame; `dir` splits it into `cols`
+or `rows`, each child taking a flex `ratio`, and any child splits again. On top of that,
+any region carries **guide sets** — columns, rows, or a square baseline grid — which draw
+across the region that declares them, so a frame-wide 12-column set and a 4-column set
+inside one panel coexist.
+
+`solveRegions(root, box)` flattens the tree into rectangles; everything else is a
+consumer. `GridOverlay` paints them, `gridSnapLines` turns them into snap candidates for
+drag and resize, and the inspector's region map is the same solve at panel scale. Square
+grids are painted as a repeating gradient rather than one element per cell, which is the
+difference between a fine grid being free and it costing you the frame rate.
+
+Regions are addressed by **path** — the child indices from the root down, so `[]` is the
+root and `[0, 1]` is the second child of the first. Paths survive edits to other branches.
+The solver reads `children`/`sets` through `kidsOf`/`setsOf`, because documents round-trip
+through JSON and a hand-edited file should not be able to take the canvas down;
+`normalizeGrid` repairs one properly on load, and `migrateGrids` converts the older
+`guides` field.
+
 ## Why the DOM is the source of truth for geometry
 
 This is the decision everything else hangs off.

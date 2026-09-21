@@ -5,6 +5,7 @@ import { Icon } from '@/render/icons'
 import { DEVICES } from '@/core/devices'
 import { Check, ColorField, IconField, NumField, SelectField, Seg, TextField } from './fields'
 import { PROP_SCHEMA } from './propSchema'
+import { GridEditor } from './GridEditor'
 import type { Node, Style } from '@/core/types'
 import { nodeWorldRect } from '@/canvas/measure'
 
@@ -142,7 +143,7 @@ function DocumentPanel() {
 
       <Section title="Canvas">
         <Check checked={prefs.showGrid} onChange={(v) => setPrefs({ showGrid: v })} label="Dot grid" />
-        <Check checked={prefs.showGuides} onChange={(v) => setPrefs({ showGuides: v })} label="Column guides" />
+        <Check checked={prefs.showGuides} onChange={(v) => setPrefs({ showGuides: v })} label="Layout grids" />
         <Check checked={prefs.snap} onChange={(v) => setPrefs({ snap: v })} label="Snap to objects" />
         <div className="row" style={{ marginTop: 8 }}>
           <span className="row-label">Grid</span>
@@ -591,31 +592,12 @@ export function Inspector() {
               ]}
             />
           </div>
-          <div className="row" style={{ marginTop: 8 }}>
-            <Check
-              checked={!!n.guides?.enabled}
-              onChange={(v) =>
-                mutate((d) => {
-                  const t = d.nodes[n.id]
-                  t.guides = {
-                    enabled: v,
-                    columns: t.guides?.columns ?? 12,
-                    gutter: t.guides?.gutter ?? 24,
-                    margin: t.guides?.margin ?? 32,
-                    color: t.guides?.color ?? 'rgba(232,97,60,0.16)',
-                  }
-                })
-              }
-              label="Column guides"
-            />
-          </div>
-          {n.guides?.enabled && (
-            <div className="row split3" style={{ marginTop: 6 }}>
-              <NumField label="Col" value={n.guides.columns} min={1} max={24} onChange={(v) => mutate((d) => { d.nodes[n.id].guides!.columns = v })} />
-              <NumField label="Gut" value={n.guides.gutter} min={0} max={200} onChange={(v) => mutate((d) => { d.nodes[n.id].guides!.gutter = v })} />
-              <NumField label="Mar" value={n.guides.margin} min={0} max={400} onChange={(v) => mutate((d) => { d.nodes[n.id].guides!.margin = v })} />
-            </div>
-          )}
+        </Section>
+      )}
+
+      {!multi && n.type === 'frame' && (
+        <Section title="Layout grid">
+          <GridEditor frame={n} />
         </Section>
       )}
 
