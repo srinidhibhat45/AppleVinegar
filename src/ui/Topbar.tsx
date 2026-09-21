@@ -223,7 +223,7 @@ export function Topbar() {
           <MenuItem
             icon="github"
             label="Source on GitHub"
-            onClick={() => window.open('https://github.com/applecider/applecider', '_blank', 'noopener')}
+            onClick={() => window.open('https://github.com/srinidhibhat45/AppleVinegar', '_blank', 'noopener')}
           />
         </Menu>
       )}

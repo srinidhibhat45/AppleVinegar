@@ -6,7 +6,7 @@ import { getItem, LIBRARY } from '@/library'
 import { href, navigate } from '@/app/router'
 import { useFiles } from '@/files/store'
 
-const REPO = 'https://github.com/applecider/applecider'
+const REPO = 'https://github.com/srinidhibhat45/AppleVinegar'
 
 function useReveal<T extends HTMLElement>() {
   const ref = useRef<T>(null)

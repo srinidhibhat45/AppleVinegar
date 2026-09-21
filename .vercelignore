@@ -1,0 +1,13 @@
+# Only the files the build actually reads need to be uploaded.
+node_modules
+dist
+
+# Repo furniture that has no bearing on the bundle.
+.github
+.claude
+docs
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+
+.DS_Store
+*.log

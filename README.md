@@ -41,8 +41,8 @@ Everything else is downstream of that.
 ## Quick start
 
 ```bash
-git clone https://github.com/applecider/applecider.git
-cd applecider
+git clone https://github.com/srinidhibhat45/AppleVinegar.git
+cd AppleVinegar
 npm install
 npm run dev
 ```
@@ -67,6 +67,36 @@ npm run typecheck  # tsc --noEmit
 
 The build is a static site. Drop `dist/` on any host — GitHub Pages, Netlify, an S3
 bucket, a USB stick.
+
+## Deploying
+
+`vercel.json` in the repo root is the whole configuration. Import the repository on
+Vercel and accept the detected settings; the file supplies the rest.
+
+| What it sets | Why |
+|---|---|
+| `npm ci` + `npm run build` → `dist` | The build typechecks first, so a type error fails the deploy instead of shipping |
+| `/assets/*` cached for a year, immutable | Vite content-hashes those filenames, so a given URL can never change contents |
+| `/` revalidated every time | The entry document is the one file that changes per deploy |
+| Unknown extensionless paths → `/` | Routes live in the hash, so `/` is the only real path. A typo or a stale link lands on the site rather than a platform 404 — and anything with a dot in it falls through to the filesystem, so files you add to `public/` keep working |
+| CSP, `nosniff`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy` | Sensible defaults for a page that runs entirely in the browser |
+
+The content security policy allows exactly what the app does: its own bundle, inline
+styles (React writes them), Google Fonts for the stylesheet and the font files, and
+`data:`/`blob:` images for the PNG and SVG exporters. Nothing else — no third-party
+scripts, no analytics, no remote origins. If you add any of those, widen the policy in
+`vercel.json` or the browser will refuse them.
+
+To see what a host will actually serve before you push, build and preview locally:
+
+```bash
+npm run build && npm run preview
+```
+
+`build.sourcemap` is on, so `dist/` carries about 1.4 MB of `.map` files alongside the
+568 KB that users download. Browsers only fetch them when devtools is open. On an
+MIT-licensed project that is worth it — a stack trace from the deployed site is
+readable. Set `sourcemap: false` in `vite.config.ts` if you would rather not ship them.
 
 ## Features
 

@@ -119,7 +119,7 @@ export function FilesSidebar({
       </div>
 
       <div className="nav-foot">
-        <a className="nav-link" href="https://github.com/applecider/applecider" target="_blank" rel="noreferrer noopener">
+        <a className="nav-link" href="https://github.com/srinidhibhat45/AppleVinegar" target="_blank" rel="noreferrer noopener">
           <Icon name="github" size={14} />
           Star on GitHub
         </a>

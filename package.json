@@ -5,8 +5,8 @@
   "type": "module",
   "description": "Stage-0 wireframing at the speed of thought. An open-source, hand-drawn wireframe generator for the web.",
   "license": "MIT",
-  "homepage": "https://github.com/applecider/applecider",
-  "repository": { "type": "git", "url": "https://github.com/applecider/applecider.git" },
+  "homepage": "https://github.com/srinidhibhat45/AppleVinegar",
+  "repository": { "type": "git", "url": "https://github.com/srinidhibhat45/AppleVinegar.git" },
   "keywords": ["wireframe", "prototyping", "design", "sketch", "ux", "low-fidelity", "canvas"],
   "scripts": {
     "dev": "vite",
