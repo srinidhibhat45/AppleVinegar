@@ -1,0 +1,350 @@
+/* ---------------------------------------------------------------------------
+   AppleCider design tokens
+
+   Three layers, in order of abstraction:
+     1. palette   — raw ramps, never used directly in components
+     2. semantic  — `--ui-*` for app chrome, `--brand-*` for identity
+     3. surface   — `--w-*` for the wireframe canvas, swapped per style
+
+   Components only ever reference layers 2 and 3.
+--------------------------------------------------------------------------- */
+
+:root {
+  /* ---- 1. palette ------------------------------------------------------ */
+  /* warm neutral — the paper the whole product sits on */
+  --n-0: #ffffff;
+  --n-25: #fdfcfa;
+  --n-50: #f8f6f2;
+  --n-100: #f1eee8;
+  --n-150: #e9e5dd;
+  --n-200: #ded9cf;
+  --n-300: #c8c1b3;
+  --n-400: #a69d8d;
+  --n-500: #82796a;
+  --n-600: #635c4f;
+  --n-700: #49443a;
+  --n-800: #2f2b25;
+  --n-900: #1b1814;
+  --n-950: #0f0d0b;
+
+  /* cider — the accent, warm pressed-apple orange */
+  --c-50: #fdf4ef;
+  --c-100: #fae4d7;
+  --c-200: #f3c6ac;
+  --c-300: #eaa37c;
+  --c-400: #df7c4c;
+  --c-500: #d2542a;
+  --c-600: #b4411f;
+  --c-700: #8f331a;
+  --c-800: #6b2714;
+
+  /* orchard — secondary, used sparingly for "good" states */
+  --g-100: #dcefe2;
+  --g-500: #2f7d53;
+  --g-600: #24623f;
+
+  --y-100: #fbeed0;
+  --y-500: #b5811b;
+  --r-100: #fadcd8;
+  --r-500: #c0392b;
+  --b-100: #d9e8f7;
+  --b-500: #2d6fb0;
+
+  /* ---- 2. semantic: identity ------------------------------------------ */
+  --brand-ink: var(--n-900);
+  --brand-leaf: var(--c-500);
+  --brand-paper: #fffdf8;
+
+  /* ---- 2. semantic: app chrome (light) -------------------------------- */
+  --ui-bg: var(--n-100);
+  --ui-panel: var(--n-0);
+  --ui-panel-2: var(--n-50);
+  --ui-sunken: var(--n-100);
+  --ui-border: var(--n-150);
+  --ui-border-strong: var(--n-200);
+  --ui-text: var(--n-900);
+  --ui-text-2: var(--n-700);
+  --ui-muted: var(--n-500);
+  --ui-faint: var(--n-400);
+  --ui-hover: var(--n-100);
+  --ui-active: var(--n-150);
+  --ui-canvas: #e8e4dc;
+
+  --accent: var(--c-500);
+  --accent-hover: var(--c-600);
+  --accent-press: var(--c-700);
+  --accent-soft: var(--c-50);
+  --accent-soft-2: var(--c-100);
+  --accent-line: var(--c-200);
+  --accent-on: #ffffff;
+
+  --good: var(--g-500);
+  --good-soft: var(--g-100);
+  --warn: var(--y-500);
+  --warn-soft: var(--y-100);
+  --danger: var(--r-500);
+  --danger-soft: var(--r-100);
+  --info: var(--b-500);
+  --info-soft: var(--b-100);
+
+  /* ---- elevation ------------------------------------------------------- */
+  --e-1: 0 1px 2px rgba(27, 24, 20, 0.05);
+  --e-2: 0 1px 2px rgba(27, 24, 20, 0.05), 0 2px 6px rgba(27, 24, 20, 0.06);
+  --e-3: 0 2px 4px rgba(27, 24, 20, 0.05), 0 8px 20px rgba(27, 24, 20, 0.09);
+  --e-4: 0 4px 8px rgba(27, 24, 20, 0.06), 0 18px 44px rgba(27, 24, 20, 0.14);
+  --e-5: 0 8px 16px rgba(27, 24, 20, 0.08), 0 32px 80px rgba(27, 24, 20, 0.2);
+  --ring: 0 0 0 3px var(--c-100);
+
+  /* back-compat aliases used by older rules */
+  --ui-shadow: var(--e-2);
+  --ui-shadow-lg: var(--e-4);
+
+  /* ---- shape ----------------------------------------------------------- */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 9px;
+  --r-lg: 13px;
+  --r-xl: 18px;
+  --r-2xl: 26px;
+  --r-pill: 999px;
+  --radius-sm: var(--r-sm);
+  --radius: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+
+  /* ---- type ------------------------------------------------------------ */
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-hand: 'Comic Neue', 'Comic Sans MS', 'Chalkboard SE', 'Architects Daughter', cursive;
+  --font-marker: 'Architects Daughter', 'Comic Neue', cursive;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --t-xs: 11px;
+  --t-sm: 12px;
+  --t-md: 13px;
+  --t-lg: 15px;
+  --t-xl: 18px;
+
+  /* ---- layout ---------------------------------------------------------- */
+  --topbar-h: 50px;
+  --rail-w: 54px;
+  --panel-w: 288px;
+  --inspector-w: 272px;
+
+  --dur-fast: 0.12s;
+  --dur: 0.18s;
+  --ease: cubic-bezier(0.2, 0.8, 0.3, 1);
+
+  color-scheme: light;
+  accent-color: var(--accent);
+}
+
+/* ---------------------------------------------------------------------------
+   Dark chrome. The wireframe surface stays light — a sketch on a dark canvas
+   stops reading as paper — so only `--ui-*` flips.
+--------------------------------------------------------------------------- */
+:root[data-ui='dark'] {
+  --ui-bg: #151317;
+  --ui-panel: #1c1a20;
+  --ui-panel-2: #232128;
+  --ui-sunken: #121014;
+  --ui-border: #2e2b34;
+  --ui-border-strong: #433f4c;
+  --ui-text: #f0eef2;
+  --ui-text-2: #bdb9c4;
+  --ui-muted: #8a8593;
+  --ui-faint: #6c6775;
+  --ui-hover: #272430;
+  --ui-active: #332f3d;
+  --ui-canvas: #0e0d10;
+
+  --brand-ink: #f0eef2;
+  --brand-paper: #1c1a20;
+
+  --accent: #f0764a;
+  --accent-hover: #ff8a5f;
+  --accent-press: #ff9c77;
+  --accent-soft: rgba(240, 118, 74, 0.14);
+  --accent-soft-2: rgba(240, 118, 74, 0.22);
+  --accent-line: rgba(240, 118, 74, 0.42);
+
+  --good-soft: rgba(47, 125, 83, 0.2);
+  --warn-soft: rgba(181, 129, 27, 0.2);
+  --danger-soft: rgba(192, 57, 43, 0.2);
+  --info-soft: rgba(45, 111, 176, 0.2);
+
+  --e-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --e-2: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --e-3: 0 2px 4px rgba(0, 0, 0, 0.4), 0 8px 20px rgba(0, 0, 0, 0.45);
+  --e-4: 0 4px 8px rgba(0, 0, 0, 0.4), 0 18px 44px rgba(0, 0, 0, 0.55);
+  --e-5: 0 8px 16px rgba(0, 0, 0, 0.5), 0 32px 80px rgba(0, 0, 0, 0.7);
+  --ring: 0 0 0 3px rgba(240, 118, 74, 0.28);
+
+  color-scheme: dark;
+}
+
+/* ---------------------------------------------------------------------------
+   Wireframe surface styles
+
+   Each style defines the base palette AND a *role* layer. Roles are the whole
+   point: a wireframe is only readable if scaffolding, surfaces, fields,
+   controls, media and annotation are instantly distinguishable from each
+   other. If every box is the same 2.4px rectangle the drawing says nothing.
+
+     structure   dashed hairline, no fill      layout scaffolding — recedes
+     surface     solid stroke on paper         a card the user actually sees
+     raised      surface + hard offset shadow  floats above the page
+     field       thin stroke, tinted well      "type here"
+     control     thick stroke, crisp corners   "click here"
+     media       stroke + diagonal hatch       "a picture goes here"
+     annotation  marker ink, no stroke         a note *about* the design
+--------------------------------------------------------------------------- */
+
+.w-theme-sketch {
+  --w-font: var(--font-hand);
+  --w-font-display: var(--font-marker);
+  --w-ink: #1f1d1a;
+  --w-ink-2: #4a463f;
+  --w-muted: #9c968a;
+  --w-faint: #ccc6b8;
+  --w-paper: #fffdf8;
+  --w-fill: #ffffff;
+  --w-fill-2: #f4f1e8;
+  --w-accent: #1f1d1a;
+  --w-stroke-thin: 1.8px;
+  --w-radius: 4px;
+  --w-radius-lg: 10px;
+  --w-shadow: 2px 2px 0 rgba(31, 29, 26, 0.16);
+  --w-letter: 0.1px;
+
+  /* roles */
+  --w-hair: 1.4px;
+  --w-stroke: 2.2px;
+  --w-stroke-thick: 3.2px;
+  --w-structure-stroke: var(--w-faint);
+  --w-structure-width: 1.4px;
+  --w-surface-fill: var(--w-paper);
+  --w-surface-radius: 10px;
+  --w-field-fill: #faf7ef;
+  --w-field-stroke: #6c675d;
+  --w-field-width: 1.9px;
+  --w-field-radius: 3px;
+  --w-control-width: 3px;
+  --w-control-radius: 7px;
+  --w-media-fill: #f6f3ea;
+  --w-hatch: rgba(31, 29, 26, 0.09);
+  --w-lift: 3px 4px 0 rgba(31, 29, 26, 0.17);
+  --w-lift-lg: 5px 7px 0 rgba(31, 29, 26, 0.15);
+  --w-pen: #c4402c;
+  --w-pen-soft: rgba(196, 64, 44, 0.12);
+}
+
+.w-theme-wire {
+  --w-font: var(--font-ui);
+  --w-font-display: var(--font-ui);
+  --w-ink: #4b5563;
+  --w-ink-2: #6b7280;
+  --w-muted: #9ca3af;
+  --w-faint: #d9dee5;
+  --w-paper: #ffffff;
+  --w-fill: #ffffff;
+  --w-fill-2: #f3f5f7;
+  --w-accent: #4b5563;
+  --w-stroke-thin: 1px;
+  --w-radius: 6px;
+  --w-radius-lg: 12px;
+  --w-shadow: none;
+  --w-letter: 0;
+
+  /* roles */
+  --w-hair: 1px;
+  --w-stroke: 1.5px;
+  --w-stroke-thick: 2px;
+  --w-structure-stroke: var(--w-faint);
+  --w-structure-width: 1px;
+  --w-surface-fill: var(--w-paper);
+  --w-surface-radius: 10px;
+  --w-field-fill: #f8fafc;
+  --w-field-stroke: #94a0ae;
+  --w-field-width: 1.2px;
+  --w-field-radius: 5px;
+  --w-control-width: 1.8px;
+  --w-control-radius: 7px;
+  --w-media-fill: #f3f5f7;
+  --w-hatch: rgba(75, 85, 99, 0.08);
+  --w-lift: 0 2px 6px rgba(15, 23, 42, 0.1);
+  --w-lift-lg: 0 10px 26px rgba(15, 23, 42, 0.14);
+  --w-pen: #d23f2b;
+  --w-pen-soft: rgba(210, 63, 43, 0.1);
+}
+
+.w-theme-mono {
+  --w-font: var(--font-mono);
+  --w-font-display: var(--font-mono);
+  --w-ink: #101010;
+  --w-ink-2: #2f2f2f;
+  --w-muted: #8a8a8a;
+  --w-faint: #d5d5d5;
+  --w-paper: #ffffff;
+  --w-fill: #ffffff;
+  --w-fill-2: #f0f0f0;
+  --w-accent: #101010;
+  --w-stroke-thin: 1.4px;
+  --w-radius: 0px;
+  --w-radius-lg: 0px;
+  --w-shadow: 3px 3px 0 #101010;
+  --w-letter: -0.2px;
+
+  /* roles */
+  --w-hair: 1.4px;
+  --w-stroke: 2px;
+  --w-stroke-thick: 3px;
+  --w-structure-stroke: var(--w-faint);
+  --w-structure-width: 1.4px;
+  --w-surface-fill: var(--w-paper);
+  --w-surface-radius: 0px;
+  --w-field-fill: #f7f7f7;
+  --w-field-stroke: #5c5c5c;
+  --w-field-width: 1.6px;
+  --w-field-radius: 0px;
+  --w-control-width: 2.6px;
+  --w-control-radius: 0px;
+  --w-media-fill: #f0f0f0;
+  --w-hatch: rgba(16, 16, 16, 0.08);
+  --w-lift: 3px 3px 0 #101010;
+  --w-lift-lg: 5px 5px 0 #101010;
+  --w-pen: #101010;
+  --w-pen-soft: rgba(16, 16, 16, 0.08);
+}
+
+/* ---------------------------------------------------------------------------
+   Wordmark
+--------------------------------------------------------------------------- */
+.logo-full {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.36em;
+  font-size: calc(var(--logo-size) * 0.62);
+}
+.logo-word {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  letter-spacing: -0.028em;
+  white-space: nowrap;
+  line-height: 1;
+}
+.logo-word-a {
+  color: var(--brand-ink);
+}
+.logo-word-b {
+  color: var(--brand-leaf);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

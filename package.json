@@ -1,0 +1,31 @@
+{
+  "name": "applecider",
+  "private": false,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Stage-0 wireframing at the speed of thought. An open-source, hand-drawn wireframe generator for the web.",
+  "license": "MIT",
+  "homepage": "https://github.com/applecider/applecider",
+  "repository": { "type": "git", "url": "https://github.com/applecider/applecider.git" },
+  "keywords": ["wireframe", "prototyping", "design", "sketch", "ux", "low-fidelity", "canvas"],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "immer": "^10.1.1",
+    "nanoid": "^5.0.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.2",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.8"
+  }
+}

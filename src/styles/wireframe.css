@@ -1,0 +1,930 @@
+/* ---------------------------------------------------------------------------
+   Wireframe surface. Every rendered node is a `.wn`; the look comes from the
+   `--w-*` theme layer so the whole canvas re-skins instantly.
+--------------------------------------------------------------------------- */
+
+.w-surface {
+  font-family: var(--w-font);
+  color: var(--w-ink);
+  letter-spacing: var(--w-letter);
+  line-height: 1.35;
+}
+
+.wn {
+  position: absolute;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+}
+.wn.flow {
+  position: relative;
+}
+.wn[data-hidden='1'] {
+  display: none;
+}
+
+/* Hand-drawn distortion. One filter for the whole canvas rather than a
+   per-shape redraw, so the cost is a single composited pass no matter how
+   many objects are on screen. */
+.rough-on {
+  filter: url(#cider-rough);
+}
+
+/* --- containers --------------------------------------------------------- */
+.wn-group,
+.wn-stack,
+.wn-grid {
+  display: flex;
+}
+.wn-stack.free,
+.wn-group.free,
+.wn-grid.free {
+  display: block;
+}
+.wn-grid.is-grid {
+  display: grid;
+}
+
+/* --- primitives --------------------------------------------------------- */
+.wn-box {
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: var(--w-radius);
+  background: var(--w-fill);
+}
+
+/* --- roles ---------------------------------------------------------------
+   A role is set by the library via props.role and turns into a class on the
+   node. It decides weight, fill and corner so that a container, a card, a
+   field and a button can never be mistaken for one another.
+------------------------------------------------------------------------- */
+
+/* scaffolding — visible enough to grab, quiet enough to ignore */
+.wn.role-structure {
+  border: var(--w-structure-width) dashed var(--w-structure-stroke);
+  border-radius: 2px;
+  background: transparent;
+}
+/* a card the user actually sees */
+.wn.role-surface {
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: var(--w-surface-radius);
+  background: var(--w-surface-fill);
+}
+/* floats above the page */
+.wn.role-raised {
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: var(--w-surface-radius);
+  background: var(--w-paper);
+  box-shadow: var(--w-lift-lg);
+}
+/* a tinted well that says "type here" */
+.wn.role-field {
+  border: var(--w-field-width) solid var(--w-field-stroke);
+  border-radius: var(--w-field-radius);
+  background: var(--w-field-fill);
+}
+/* thick and crisp — "click here" */
+.wn.role-control {
+  border: var(--w-control-width) solid var(--w-ink);
+  border-radius: var(--w-control-radius);
+  background: var(--w-fill);
+}
+/* a strip of chrome: bars, toolbars, nav */
+.wn.role-bar {
+  border: var(--w-hair) solid var(--w-faint);
+  border-radius: 0;
+  background: var(--w-fill-2);
+}
+/* no box at all — text and glyphs */
+.wn.role-bare {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+.wn-ellipse {
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: 50%;
+  background: var(--w-fill);
+}
+.wn-divider {
+  background: var(--w-ink);
+}
+.wn-line,
+.wn-arrow {
+  overflow: visible;
+}
+.wn-line svg,
+.wn-arrow svg {
+  overflow: visible;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.wn-text {
+  display: flex;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow: hidden;
+}
+.wn-text > .t-inner {
+  width: 100%;
+  outline: none;
+}
+.wn-text[contenteditable='true'],
+.wn-text .t-inner[contenteditable='true'] {
+  cursor: text;
+  outline: none;
+}
+
+/* placeholder image: box with the classic crossed diagonals */
+.wn-image {
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: var(--w-radius);
+  background-color: var(--w-media-fill);
+  overflow: hidden;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.wn-image .cross {
+  position: absolute;
+  inset: 0;
+  color: var(--w-ink);
+  opacity: 0.32;
+}
+.wn-image .cross svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.wn-image .glyph {
+  position: relative;
+  color: var(--w-ink);
+  opacity: 0.75;
+}
+.wn-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.wn-image.avatarish {
+  border-radius: 50%;
+}
+
+.wn-icon {
+  display: grid;
+  place-items: center;
+  color: var(--w-ink);
+}
+.wn-icon svg {
+  width: 100%;
+  height: 100%;
+}
+.wn-icon.boxed {
+  border: var(--w-stroke-thin) solid var(--w-ink);
+  border-radius: var(--w-radius);
+  padding: 12%;
+}
+
+/* fake paragraph text: the stacked grey bars everyone draws */
+.wn-scribble {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+.wn-scribble .sl {
+  background: var(--w-muted);
+  border-radius: 1.5px;
+  opacity: 0.55;
+  flex: none;
+}
+.wn-scribble.inky .sl {
+  background: var(--w-ink-2);
+  opacity: 0.7;
+}
+.wn-scribble.squiggle {
+  background: transparent;
+}
+.wn-scribble.squiggle svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+/* A sticky is the one thing on the board that is *not* part of the product
+   being designed, so it has to look like a different material entirely: real
+   paper stock, a curled corner, a shadow that falls rather than offsets, and
+   a slight lie of the page. Flat coloured rectangles got mistaken for UI. */
+.wn-sticky {
+  --sticky-bg: #ffe98a;
+  --sticky-fold: #e8cf62;
+  --sticky-ink: #40371d;
+  background:
+    linear-gradient(-135deg, transparent 0 13px, var(--sticky-bg) 13px) top right / 100% 100% no-repeat;
+  border: none;
+  border-radius: 1px;
+  filter: drop-shadow(2px 3px 2px rgba(31, 29, 26, 0.22));
+  padding: 13px 14px;
+  font-family: var(--font-marker);
+  font-size: 15px;
+  line-height: 1.28;
+  color: var(--sticky-ink);
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+/* the curl: a small triangle of the underside showing through the cut corner */
+.wn-sticky::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 13px;
+  height: 13px;
+  background: var(--sticky-fold);
+  clip-path: polygon(0 0, 100% 100%, 0 100%);
+}
+.wn-sticky.yellow { --sticky-bg: #ffe98a; --sticky-fold: #e5ca5c; --sticky-ink: #40371d; }
+.wn-sticky.pink   { --sticky-bg: #ffb3cd; --sticky-fold: #e894b0; --sticky-ink: #4d1f32; }
+.wn-sticky.blue   { --sticky-bg: #a8d8ff; --sticky-fold: #86bce8; --sticky-ink: #123049; }
+.wn-sticky.green  { --sticky-bg: #b4eaa8; --sticky-fold: #93cd87; --sticky-ink: #1c3d16; }
+.wn-sticky.purple { --sticky-bg: #cfc0ff; --sticky-fold: #ae9ce8; --sticky-ink: #2b1f55; }
+.wn-sticky.orange { --sticky-bg: #ffc78a; --sticky-fold: #e8a962; --sticky-ink: #4a2f10; }
+
+/* Torn-edge variant for a note that is a fragment of a thought, not a task. */
+.wn-sticky.torn {
+  border-radius: 0;
+  clip-path: polygon(
+    0 2%, 8% 0, 22% 3%, 38% 0.5%, 55% 3%, 71% 0, 87% 2.5%, 100% 0.5%,
+    99% 18%, 100% 38%, 98.5% 60%, 100% 80%, 99% 100%,
+    82% 97.5%, 66% 100%, 48% 97%, 30% 99.5%, 14% 97%, 0 99%,
+    1.5% 78%, 0 58%, 1% 36%, 0 18%
+  );
+  filter: drop-shadow(1px 2px 1.5px rgba(31, 29, 26, 0.2));
+}
+.wn-sticky.torn::after { display: none; }
+
+/* --- controls ----------------------------------------------------------- */
+.wn-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: var(--w-control-width) solid var(--w-ink);
+  border-radius: var(--w-control-radius);
+  background: var(--w-fill);
+  color: var(--w-ink);
+  font-weight: 700;
+  text-align: center;
+  padding: 0 16px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+/* The primary action is the only solid black shape in a wireframe, which is
+   exactly why you can find it in half a second on any screen. */
+.wn-button.primary {
+  background: var(--w-ink);
+  color: var(--w-paper);
+}
+.wn-button.primary .wn-icon,
+.wn-button.primary svg {
+  color: var(--w-paper);
+}
+.wn-button.secondary {
+  background: var(--w-fill);
+}
+.wn-button.ghost {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.wn-button.dashed {
+  border-style: dashed;
+  box-shadow: none;
+}
+.wn-button.danger {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--w-fill),
+    var(--w-fill) 5px,
+    var(--w-fill-2) 5px,
+    var(--w-fill-2) 10px
+  );
+}
+.wn-button.pill {
+  border-radius: 999px;
+}
+.wn-button.disabled {
+  opacity: 0.45;
+}
+.wn-button.iconOnly {
+  padding: 0;
+}
+
+/* Fields read as *wells*: thinner stroke, tinted ground, square corners —
+   deliberately the opposite of a button, which is thick, white and rounded.
+   That one contrast does more for wireframe legibility than any label. */
+.wn-input,
+.wn-textarea,
+.wn-select {
+  border: var(--w-field-width) solid var(--w-field-stroke);
+  border-radius: var(--w-field-radius);
+  background: var(--w-field-fill);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  color: var(--w-muted);
+  overflow: hidden;
+}
+.wn-textarea {
+  align-items: flex-start;
+  padding: 9px 11px;
+}
+.wn-input .ph,
+.wn-textarea .ph,
+.wn-select .ph {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wn-input.filled .ph,
+.wn-select.filled .ph {
+  color: var(--w-ink);
+}
+.wn-input .caret {
+  width: var(--w-stroke-thin);
+  height: 58%;
+  background: var(--w-ink);
+  flex: none;
+}
+.wn-input.underline,
+.wn-select.underline {
+  background: transparent;
+  border-width: 0 0 var(--w-stroke) 0;
+  border-radius: 0;
+  padding-left: 2px;
+  padding-right: 2px;
+}
+.wn-input.error,
+.wn-textarea.error,
+.wn-select.error {
+  border-color: var(--w-ink);
+  border-style: dashed;
+  border-width: var(--w-stroke);
+}
+.wn-select .chev {
+  flex: none;
+  color: var(--w-ink);
+}
+
+.wn-checkbox,
+.wn-radio {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--w-ink);
+  overflow: hidden;
+}
+.wn-checkbox .bx,
+.wn-radio .bx {
+  flex: none;
+  border: var(--w-field-width) solid var(--w-ink);
+  background: var(--w-field-fill);
+  display: grid;
+  place-items: center;
+  color: var(--w-ink);
+}
+.wn-checkbox .bx {
+  border-radius: 3px;
+}
+.wn-radio .bx {
+  border-radius: 50%;
+}
+.wn-checkbox .lbl,
+.wn-radio .lbl {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wn-radio .dot {
+  background: var(--w-ink);
+  border-radius: 50%;
+  width: 52%;
+  height: 52%;
+}
+
+.wn-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--w-ink);
+}
+.wn-switch .track {
+  flex: none;
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: 999px;
+  background: var(--w-fill);
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+.wn-switch.on .track {
+  background: var(--w-ink);
+  justify-content: flex-end;
+}
+.wn-switch .knob {
+  border-radius: 50%;
+  background: var(--w-ink);
+  aspect-ratio: 1;
+  height: 100%;
+}
+.wn-switch.on .knob {
+  background: var(--w-paper);
+}
+
+.wn-slider {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+.wn-slider .track {
+  height: var(--w-stroke);
+  background: var(--w-faint);
+  width: 100%;
+  border-radius: 99px;
+}
+.wn-slider .fill {
+  position: absolute;
+  height: var(--w-stroke);
+  background: var(--w-ink);
+  border-radius: 99px;
+  left: 0;
+}
+.wn-slider .knob {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: var(--w-stroke) solid var(--w-ink);
+  background: var(--w-fill);
+  transform: translateX(-50%);
+}
+.wn-slider.range .knob.b {
+  left: auto;
+}
+
+.wn-segmented {
+  display: flex;
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: var(--w-radius);
+  overflow: hidden;
+  background: var(--w-fill);
+}
+.wn-segmented .sg {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  border-right: var(--w-stroke-thin) solid var(--w-ink);
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 0 6px;
+  font-weight: 600;
+}
+.wn-segmented .sg:last-child {
+  border-right: none;
+}
+.wn-segmented .sg.on {
+  background: var(--w-ink);
+  color: var(--w-paper);
+}
+
+.wn-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--w-ink);
+}
+.wn-stepper {
+  display: flex;
+  align-items: stretch;
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: var(--w-radius);
+  overflow: hidden;
+  background: var(--w-fill);
+}
+.wn-stepper .sbtn {
+  width: 34px;
+  display: grid;
+  place-items: center;
+  border-right: var(--w-stroke-thin) solid var(--w-ink);
+  font-weight: 700;
+  flex: none;
+}
+.wn-stepper .sval {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+}
+.wn-stepper .sbtn.last {
+  border-right: none;
+  border-left: var(--w-stroke-thin) solid var(--w-ink);
+}
+
+/* --- display ------------------------------------------------------------ */
+.wn-avatar {
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: 50%;
+  background: var(--w-fill-2);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: var(--w-ink);
+  font-weight: 700;
+  flex: none;
+}
+.wn-avatar.square {
+  border-radius: var(--w-radius);
+}
+.wn-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: var(--w-stroke-thin) solid var(--w-ink);
+  border-radius: 999px;
+  padding: 0 9px;
+  font-weight: 700;
+  background: var(--w-fill);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.wn-badge.solid {
+  background: var(--w-ink);
+  color: var(--w-paper);
+}
+.wn-badge.square {
+  border-radius: var(--w-radius);
+}
+.wn-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.wn-progress {
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--w-fill);
+  display: flex;
+}
+.wn-progress .bar {
+  background: var(--w-ink);
+  height: 100%;
+}
+.wn-progress.striped .bar {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--w-ink),
+    var(--w-ink) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+.wn-progress.ring {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+.wn-progress.ring svg {
+  width: 100%;
+  height: 100%;
+}
+
+.wn-spinner {
+  display: grid;
+  place-items: center;
+  color: var(--w-ink);
+}
+.wn-spinner svg {
+  width: 100%;
+  height: 100%;
+  animation: wspin 1.4s linear infinite;
+}
+@keyframes wspin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.wn-chart {
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: var(--w-radius);
+  background: var(--w-fill);
+  overflow: hidden;
+  padding: 10px;
+}
+.wn-chart.bare {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+.wn-chart svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.wn-table {
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: var(--w-radius);
+  background: var(--w-fill);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.wn-table .tr {
+  display: flex;
+  align-items: center;
+  border-bottom: var(--w-stroke-thin) solid var(--w-faint);
+  flex: 1;
+  min-height: 0;
+}
+.wn-table .tr:last-child {
+  border-bottom: none;
+}
+.wn-table .tr.head {
+  border-bottom: var(--w-stroke) solid var(--w-ink);
+  font-weight: 700;
+  background: var(--w-fill-2);
+  flex: none;
+}
+.wn-table .td {
+  padding: 0 11px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.wn-table .td .bar {
+  height: 8px;
+  background: var(--w-faint);
+  border-radius: 99px;
+  width: 72%;
+}
+.wn-table .td.num {
+  justify-content: flex-end;
+}
+.wn-table.zebra .tr:nth-child(even):not(.head) {
+  background: var(--w-fill-2);
+}
+.wn-table.bordered .td {
+  border-right: var(--w-stroke-thin) solid var(--w-faint);
+}
+.wn-table.bordered .td:last-child {
+  border-right: none;
+}
+
+.wn-calendar {
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: var(--w-radius);
+  background: var(--w-fill);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 9px;
+  gap: 5px;
+}
+.wn-calendar .cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  flex: none;
+}
+.wn-calendar .cal-dows,
+.wn-calendar .cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.wn-calendar .cal-grid {
+  flex: 1;
+  grid-auto-rows: 1fr;
+}
+.wn-calendar .dow {
+  text-align: center;
+  color: var(--w-muted);
+  font-weight: 700;
+  font-size: 0.82em;
+}
+.wn-calendar .day {
+  display: grid;
+  place-items: center;
+  border-radius: var(--w-radius);
+  color: var(--w-ink-2);
+}
+.wn-calendar .day.out {
+  opacity: 0.3;
+}
+.wn-calendar .day.on {
+  background: var(--w-ink);
+  color: var(--w-paper);
+}
+.wn-calendar .day.dotted::after {
+  content: '';
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--w-ink);
+  position: absolute;
+  transform: translateY(9px);
+}
+
+.wn-code {
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: var(--w-radius);
+  background: var(--w-fill-2);
+  font-family: var(--font-mono);
+  padding: 10px 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wn-code .cl {
+  height: 7px;
+  background: var(--w-faint);
+  border-radius: 2px;
+}
+
+.wn-map {
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: var(--w-radius);
+  background: var(--w-fill-2);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Media carries a 45° hatch. It is the one cue that survives being scaled to a
+   thumbnail: hatched means "real content goes here", so a picture, a video or
+   a map can never be mistaken for an empty container. Declared last because a
+   `background:` shorthand anywhere above would wipe the image out. */
+.wn-image,
+.wn-video,
+.wn-qr {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent 0 6px,
+    var(--w-hatch) 6px 7px
+  );
+}
+.wn-image {
+  background-color: var(--w-media-fill);
+}
+.wn-video {
+  background-color: var(--w-media-fill);
+}
+/* a real image fills the box — no hatch under a photo */
+.wn-image:has(img) {
+  background-image: none;
+}
+.wn-map svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.wn-video {
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: var(--w-radius);
+  background-color: var(--w-media-fill);
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+  color: var(--w-ink);
+}
+.wn-video .play {
+  width: 20%;
+  min-width: 34px;
+  max-width: 64px;
+  aspect-ratio: 1;
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--w-fill);
+}
+.wn-video .scrub {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 9px;
+  height: var(--w-stroke);
+  background: var(--w-faint);
+}
+.wn-video .scrub i {
+  display: block;
+  height: 100%;
+  width: 36%;
+  background: var(--w-ink);
+}
+
+.wn-qr {
+  border: var(--w-stroke) solid var(--w-ink);
+  background: var(--w-fill);
+  padding: 8%;
+  display: grid;
+  place-items: center;
+}
+.wn-qr svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* browser chrome + mobile status bar ------------------------------------- */
+.wn-browserbar {
+  border: var(--w-stroke) solid var(--w-ink);
+  border-radius: var(--w-radius) var(--w-radius) 0 0;
+  background: var(--w-fill-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  overflow: hidden;
+}
+.wn-browserbar .dots {
+  display: flex;
+  gap: 5px;
+  flex: none;
+}
+.wn-browserbar .dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: var(--w-stroke-thin) solid var(--w-ink);
+  display: block;
+}
+.wn-browserbar .url {
+  flex: 1;
+  height: 62%;
+  border: var(--w-stroke-thin) solid var(--w-ink);
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  color: var(--w-muted);
+  background: var(--w-fill);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.wn-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  color: var(--w-ink);
+  font-weight: 700;
+  overflow: hidden;
+}
+.wn-statusbar .right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* placeholder drop cells left behind by "split into columns" ------------- */
+.wn-placeholder-cell {
+  border: var(--w-stroke-thin) dashed var(--w-faint);
+  border-radius: var(--w-radius);
+  min-height: 24px;
+}
+
+/* overlapping stacks — avatar groups and the like ------------------------ */
+.wn.overlap-row > .wn + .wn {
+  margin-left: var(--overlap, 0);
+}
+.wn.overlap-col > .wn + .wn {
+  margin-top: var(--overlap, 0);
+}
+
+/* selected-state affordance while dragging ------------------------------- */
+.wn.dragging {
+  opacity: 0.55;
+}
